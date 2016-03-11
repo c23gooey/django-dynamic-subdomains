@@ -26,8 +26,8 @@ class SubdomainMiddleware(object):
         from dynamic_subdomains.defaults import patterns, subdomain
 
         SUBDOMAINS = patterns(
-            subdomain('api', 'path.to.api.urls', name='api'),
-            subdomain('beta', 'path.to.beta.urls', name='beta'),
+            subdomain(r'api', 'path.to.api.urls', name='api'),
+            subdomain(r'beta', 'path.to.beta.urls', name='beta'),
         )
 
     This causes requests to ``{api,beta}.example.com`` to be routed to their
@@ -64,8 +64,8 @@ class SubdomainMiddleware(object):
     "wildcard") subdomain schemes:
 
         SUBDOMAINS = patterns(
-            subdomain('www', ROOT_URLCONF, name='static'),
-            subdomain('\w+', 'path.to.custom_urls', name='wildcard'),
+            subdomain(r'www', ROOT_URLCONF, name='static'),
+            subdomain(r'\w+', 'path.to.custom_urls', name='wildcard'),
         )
 
     Here, requests to ``www.example.com`` will be routed as normal but a
@@ -78,7 +78,7 @@ class SubdomainMiddleware(object):
     Alternatively, we could have used negative lookahead:
 
         SUBDOMAINS = patterns(
-            subdomain('(?!www)\w+', 'path.to.custom_urls', name='wildcard'),
+            subdomain(r'(?!www)\w+', 'path.to.custom_urls', name='wildcard'),
         )
 
     Callback methods to simplify dynamic subdomains
@@ -96,8 +96,8 @@ class SubdomainMiddleware(object):
     if your subdomain matches:
 
         SUBDOMAINS = patterns(
-            subdomain('www', ROOT_URLCONF, name='static'),
-            subdomain('(?P<username>\w+)', 'path.to.custom_urls',
+            subdomain(r'www', ROOT_URLCONF, name='static'),
+            subdomain(r'(?P<username>\w+)', 'path.to.custom_urls',
                 callback='path.to.custom_fn', name='with-callback'),
         )
 
