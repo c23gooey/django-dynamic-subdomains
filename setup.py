@@ -6,10 +6,10 @@ setup(
     name='django-dynamic-subdomains',
     description="Dynamic and static subdomain support for Django.",
     version='0.1.1',
-    url='http://code.playfire.com/',
+    url='https://chris-lamb.co.uk/projects/django-dynamic-subdomains/',
 
-    author='Playfire.com',
-    author_email='tech@playfire.com',
+    author="Chris Lamb",
+    author_email='chris@chris-lamb.co.uk',
     license='BSD',
 
     packages=find_packages(),
