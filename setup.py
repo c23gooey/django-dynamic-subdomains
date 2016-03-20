@@ -13,9 +13,8 @@ setup(
     license='BSD',
 
     packages=find_packages(),
-    package_data={
-        'dynamic_subdomains': [
-            'templates/*/*.html',
-        ],
-    },
+
+    install_requires=(
+        "Django>=1.8",
+    ),
 )
