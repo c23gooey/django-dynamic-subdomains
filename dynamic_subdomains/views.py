@@ -1,10 +1,9 @@
-from django.conf import settings
 from django.http import HttpResponseRedirect, HttpResponseForbidden
 
 from .app_settings import app_settings
 
 def redirect_(request, host):
-    if not settings.DEBUG:
+    if not app_settings.EMULATE:
         return HttpResponseForbidden()
 
     response = HttpResponseRedirect(request.META.get('QUERY_STRING', '') or '/')
