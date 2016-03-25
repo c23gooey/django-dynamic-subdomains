@@ -33,8 +33,8 @@ class SubdomainMiddleware(object):
     corresponding urlconf. You can use your ``urls.py`` as a template for these
     urlconfs.
 
-    Patterns are evaluated in order. If no pattern matches, the request is
-    processed in the usual way, ie. using ``settings.ROOT_URLCONF``.
+    Patterns are evaluated in order. If no subdomain pattern matches, the
+    subdomain specified by ``settings.DEFAULT_SUBDOMAIN`` is used.
 
     Pattern format
     ==============
@@ -57,8 +57,8 @@ class SubdomainMiddleware(object):
 
       * As with all regular expressions, various metacharacters need quoting.
 
-    Dynamic subdomains using regular expressions
-    ============================================
+    Using regular expressions
+    =========================
 
     Patterns as regular expressions allows setups to feature dynamic (or
     "wildcard") subdomain schemes:
@@ -156,7 +156,7 @@ class SubdomainMiddleware(object):
         <script type="text/javascript">
             function dynamicSubdomains() {
                 var val = prompt("Update host", '{{ request.get_host|escapejs }}');
-                document.cookie = '{{ app_settings.COOKIE_NAME|escapejs }}=' + val;
+                document.cookie = '{{ app_settings.COOKIE_NAME }}=' + val + '; expires=Tue, 19 Jan 2038 03:14:07 UTC;';
                 window.location.reload();
             }
         </script>
@@ -164,17 +164,18 @@ class SubdomainMiddleware(object):
             #dynamic-subdomains-toolbar {
                 right: 0;
                 bottom: 0;
-                height: 40px;
+                height: 36px;
                 z-index: 99999;
                 position: fixed;
-                padding: 12px 16px 0 16px;
+
+                padding: 10px 16px 0 16px;
+                background-color: #092e20;
+                border-top-left-radius: 7px;
 
                 color: white;
                 cursor: pointer;
                 font-size: 12px;
                 font-weight: bold;
-                background-color: #092e20;
-                border-top-left-radius: 7px;
             }
         </style>
         <div id="dynamic-subdomains-toolbar" onclick="dynamicSubdomains();">
