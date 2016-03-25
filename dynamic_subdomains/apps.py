@@ -4,8 +4,10 @@ import monkeypatch
 from django.apps import AppConfig
 from django.http import HttpRequest
 from django.conf.urls import url, include
+from django.test.client import RequestFactory
 
-from .utils import from_dotted_path, HttpRequest__get_host
+from .utils import from_dotted_path, HttpRequest__get_host, \
+    RequestFactory__generic
 from .app_settings import app_settings
 
 class DynamicSubdomainsConfig(AppConfig):
@@ -20,6 +22,7 @@ class DynamicSubdomainsConfig(AppConfig):
 
         if app_settings.EMULATE:
             monkeypatch.patch(HttpRequest__get_host, HttpRequest, 'get_host')
+            monkeypatch.patch(RequestFactory__generic, RequestFactory, 'generic')
 
             # Inject our URLs
             for x in app_settings.SUBDOMAINS:

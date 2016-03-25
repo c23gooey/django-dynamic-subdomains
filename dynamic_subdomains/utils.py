@@ -1,8 +1,12 @@
 import contextlib
 
-from django.core.urlresolvers import set_urlconf
-from django.core.urlresolvers import NoReverseMatch
+from django.http import QueryDict
+from django.core.urlresolvers import set_urlconf, NoReverseMatch, resolve, \
+    Resolver404
+from django.utils.six.moves.urllib.parse import urlsplit
 
+from .http import HttpResponseSwitchRedirect
+from .views import redirect_
 from .app_settings import app_settings
 
 @contextlib.contextmanager
@@ -53,6 +57,25 @@ def HttpRequest__get_host(self, *args, **kwargs):
         return self.COOKIES[app_settings.COOKIE_NAME]
     except KeyError:
         return HttpRequest__get_host._get_host(self, *args, **kwargs)
+
+def RequestFactory__generic(self, *args, **kwargs):
+    response = RequestFactory__generic._generic(self, *args, **kwargs)
+
+    try:
+        url = urlsplit(response['Location'])
+    except KeyError:
+        return response
+
+    try:
+        match = resolve(url.path)
+    except Resolver404:
+        return response
+
+    if isinstance(response, HttpResponseSwitchRedirect) or \
+            match.func is redirect_:
+        return self.get(url.path, QueryDict(url.query), follow=False)
+
+    return response
 
 def noop(*args, **kwargs):
     return
