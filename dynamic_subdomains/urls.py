@@ -1,8 +1,8 @@
-from django.conf.urls import patterns, url
+from django.conf.urls import url
 
-from debug_toolbar.urls import _PREFIX
+from . import views
 
-urlpatterns = patterns('dynamic_subdomains.views',
-    url(r'^%s/subdomain/redirect/$' % _PREFIX, 'redirect',
-        name='debug-subdomain-redirect'),
+urlpatterns = (
+    url(r'^redirect/(?P<host>.+)$', views.redirect_,
+        name='redirect'),
 )

@@ -1,15 +1,15 @@
 from django import template
-from django.conf import settings
 from django.template import TemplateSyntaxError
 from django.utils.encoding import smart_str
 from django.template.defaulttags import kwarg_re
 
 from ..reverse import reverse_crossdomain
+from ..app_settings import app_settings
 
 register = template.Library()
 
 @register.tag
-def domain_url(parser, token, mangle=True):
+def domain_url(parser, token):
     bits = token.split_contents()
     if len(bits) < 2:
         raise TemplateSyntaxError("'%s' takes at least 1 argument" % bits[0])
@@ -19,7 +19,12 @@ def domain_url(parser, token, mangle=True):
 
     try:
         pivot = bits.index('on')
-
+    except ValueError:
+        # No "on <subdomain>" was specified so use the default domain
+        domain = app_settings.DEFAULT_SUBDOMAIN
+        view_args, view_kwargs = parse_args_kwargs(parser, bits[1:])
+        domain_args, domain_kwargs = (), {}
+    else:
         try:
             domain = bits[pivot + 1]
         except IndexError:
@@ -28,24 +33,19 @@ def domain_url(parser, token, mangle=True):
             )
 
         view_args, view_kwargs = parse_args_kwargs(parser, bits[1:pivot])
-        domain_args, domain_kwargs = parse_args_kwargs(parser, bits[pivot+2:])
-
-    except ValueError:
-        # No "on <subdomain>" was specified so use the default domain
-        domain = settings.SUBDOMAIN_DEFAULT
-        view_args, view_kwargs = parse_args_kwargs(parser, bits[1:])
-        domain_args, domain_kwargs = (), {}
+        domain_args, domain_kwargs = parse_args_kwargs(parser, bits[pivot + 2:])
 
     return DomainURLNode(
-        domain, view, domain_args, domain_kwargs, view_args, view_kwargs, mangle
+        domain,
+        view,
+        domain_args,
+        domain_kwargs,
+        view_args,
+        view_kwargs,
     )
 
-@register.tag
-def domain_url_no_mangle(parser, token):
-    return domain_url(parser, token, mangle=False)
-
 class DomainURLNode(template.Node):
-    def __init__(self, subdomain, view, subdomain_args, subdomain_kwargs, view_args, view_kwargs, mangle):
+    def __init__(self, subdomain, view, subdomain_args, subdomain_kwargs, view_args, view_kwargs):
         self.subdomain = subdomain
         self.view = view
 
@@ -55,16 +55,18 @@ class DomainURLNode(template.Node):
         self.view_args = view_args
         self.view_kwargs = view_kwargs
 
-        self.mangle = mangle
-
     def render(self, context):
         subdomain_args = [x.resolve(context) for x in self.subdomain_args]
-        subdomain_kwargs = dict((smart_str(k, 'ascii'), v.resolve(context))
-            for k, v in self.subdomain_kwargs.items())
+        subdomain_kwargs = {
+            smart_str(k, 'ascii'): v.resolve(context)
+            for k, v in self.subdomain_kwargs.items()
+        }
 
         view_args = [x.resolve(context) for x in self.view_args]
-        view_kwargs = dict((smart_str(k, 'ascii'), v.resolve(context))
-            for k, v in self.view_kwargs.items())
+        view_kwargs = {
+            smart_str(k, 'ascii'): v.resolve(context)
+            for k, v in self.view_kwargs.items()
+        }
 
         return reverse_crossdomain(
             self.subdomain,
@@ -73,7 +75,6 @@ class DomainURLNode(template.Node):
             subdomain_kwargs,
             view_args,
             view_kwargs,
-            self.mangle,
         )
 
 def parse_args_kwargs(parser, bits):

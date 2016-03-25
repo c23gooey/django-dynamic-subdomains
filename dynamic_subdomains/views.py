@@ -1,15 +1,14 @@
-from django.http import HttpResponseRedirect, HttpResponseBadRequest
+from django.conf import settings
+from django.http import HttpResponseRedirect, HttpResponseForbidden
 
-from .forms import RedirectForm
+from .app_settings import app_settings
 
-def redirect(request):
-    form = RedirectForm(request.GET)
+def redirect_(request, host):
+    if not settings.DEBUG:
+        return HttpResponseForbidden()
 
-    if not form.is_valid():
-        return HttpResponseBadRequest(repr(form.errors))
-
-    response = HttpResponseRedirect(form.cleaned_data['path'])
-    response.set_cookie('_domain', form.cleaned_data['domain'])
+    response = HttpResponseRedirect(request.META.get('QUERY_STRING', '') or '/')
+    response.set_cookie(app_settings.COOKIE_NAME, host)
     response.status_code = 307 # Re-submit POST requests
 
     return response

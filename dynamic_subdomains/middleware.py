@@ -1,13 +1,10 @@
-import re
-import threading
-
 from django.conf import settings
-from django.core.exceptions import MiddlewareNotUsed, ImproperlyConfigured
-from django.core.urlresolvers import set_urlconf
+from django.template import Engine, Context
+from django.utils.encoding import smart_unicode
+from django.core.exceptions import MiddlewareNotUsed
 
-from .utils import from_dotted_path
-
-_thread_local = threading.local()
+from .utils import set_urlconf_from_host
+from .app_settings import app_settings
 
 class SubdomainMiddleware(object):
     """
@@ -23,11 +20,13 @@ class SubdomainMiddleware(object):
     at ``api.example.com` and ``beta.example.com``, add the following to your
     ``settings.py``:
 
-        from dynamic_subdomains.defaults import patterns, subdomain
+        from dynamic_subdomains.subdomains import subdomain
 
-        SUBDOMAINS = patterns(
-            subdomain(r'api', 'path.to.api.urls', name='api'),
-            subdomain(r'beta', 'path.to.beta.urls', name='beta'),
+        SUBDOMAINS = (
+            subdomain(r'api', 'path.to.api.urls',
+                name='api'),
+            subdomain(r'beta', 'path.to.beta.urls',
+                name='beta'),
         )
 
     This causes requests to ``{api,beta}.example.com`` to be routed to their
@@ -44,8 +43,9 @@ class SubdomainMiddleware(object):
     the following ``settings.SUBDOMAINS`` will route ``foo.example.com`` and
     ``bar.example.com`` to the same urlconf.
 
-        SUBDOMAINS = patterns(
-            subdomain(r'(foo|bar)', 'path.to.urls', name='foo-or-bar'),
+        SUBDOMAINS = (
+            subdomain(r'(foo|bar)', 'path.to.urls',
+                name='foo-or-bar'),
         )
 
     .. note:
@@ -60,25 +60,28 @@ class SubdomainMiddleware(object):
     Dynamic subdomains using regular expressions
     ============================================
 
-    Patterns being regular expressions allows setups to feature dynamic (or
+    Patterns as regular expressions allows setups to feature dynamic (or
     "wildcard") subdomain schemes:
 
-        SUBDOMAINS = patterns(
-            subdomain(r'www', ROOT_URLCONF, name='static'),
-            subdomain(r'\w+', 'path.to.custom_urls', name='wildcard'),
+        SUBDOMAINS = (
+            subdomain(r'www', ROOT_URLCONF,
+                name='static'),
+            subdomain(r'\w+', 'path.to.custom_urls',
+                name='wildcard'),
         )
 
     Here, requests to ``www.example.com`` will be routed as normal but a
     request to ``lamby.example.com`` is routed to ``path.to.custom_urls``.
 
-    As patterns are matched in order, we placed ``www`` first as it otherwise
+    As subdomains are matched in order, we placed ``www`` first as it otherwise
     would have matched against ``\w+`` and thus routed to the wrong
     destination.
 
     Alternatively, we could have used negative lookahead:
 
-        SUBDOMAINS = patterns(
-            subdomain(r'(?!www)\w+', 'path.to.custom_urls', name='wildcard'),
+        SUBDOMAINS = (
+            subdomain(r'(?!www)\w+', 'path.to.custom_urls',
+                name='wildcard'),
         )
 
     Callback methods to simplify dynamic subdomains
@@ -95,8 +98,9 @@ class SubdomainMiddleware(object):
     To remedy this, you can optionally specify a callback method to be called
     if your subdomain matches:
 
-        SUBDOMAINS = patterns(
-            subdomain(r'www', ROOT_URLCONF, name='static'),
+        SUBDOMAINS = (
+            subdomain(r'www', ROOT_URLCONF,
+                name='static'),
             subdomain(r'(?P<username>\w+)', 'path.to.custom_urls',
                 callback='path.to.custom_fn', name='with-callback'),
         )
@@ -147,58 +151,66 @@ class SubdomainMiddleware(object):
         custom urlconfs.
     """
 
+    TAG = '</body>'
+    TEMPLATE = """
+        <script type="text/javascript">
+            function dynamicSubdomains() {
+                var val = prompt("Update host", '{{ request.get_host|escapejs }}');
+                document.cookie = '{{ app_settings.COOKIE_NAME|escapejs }}=' + val;
+                window.location.reload();
+            }
+        </script>
+        <style type="text/css">
+            #dynamic-subdomains-toolbar {
+                right: 0;
+                bottom: 0;
+                height: 40px;
+                z-index: 99999;
+                position: fixed;
+                padding: 12px 16px 0 16px;
+
+                color: white;
+                cursor: pointer;
+                font-size: 12px;
+                font-weight: bold;
+                background-color: #092e20;
+                border-top-left-radius: 7px;
+            }
+        </style>
+        <div id="dynamic-subdomains-toolbar" onclick="dynamicSubdomains();">
+            {{ request.build_absolute_uri }}
+        </div>
+    """
+
     def __init__(self):
-        try:
-            settings.SUBDOMAINS
-        except AttributeError:
-            raise ImproperlyConfigured("Missing settings.SUBDOMAINS setting")
-
-        try:
-            self.default = settings.SUBDOMAINS[settings.SUBDOMAIN_DEFAULT]
-        except AttributeError:
-            raise ImproperlyConfigured(
-                "Missing settings.SUBDOMAIN_DEFAULT setting"
-            )
-        except KeyError:
-            raise ImproperlyConfigured(
-                "settings.SUBDOMAIN_DEFAULT does not point to a valid domain"
-            )
-
         if not settings.SUBDOMAINS:
             raise MiddlewareNotUsed()
 
-        # Compile subdomains. We add a literal fullstop to the end of every
-        # pattern to avoid rather unwieldy escaping in every definition.
-        for subdomain in settings.SUBDOMAINS.values():
-            callback = subdomain.get('callback', lambda *args, **kwargs: None)
-            if isinstance(callback, (basestring,)):
-                callback = from_dotted_path(callback)
-
-            subdomain['_regex'] = re.compile(r'%s(\.|$)' % subdomain['regex'])
-            subdomain['_callback'] = callback
-
     def process_request(self, request):
-        if not getattr(_thread_local, 'enabled', True):
-            return
-
         host = request.get_host()
 
-        # Find best match, falling back to settings.SUBDOMAIN_DEFAULT
-        for subdomain in settings.SUBDOMAINS.values():
-            match = subdomain['_regex'].match(host)
-            if match:
-                kwargs = match.groupdict()
-                break
-        else:
-            kwargs = {}
-            subdomain = self.default
+        with set_urlconf_from_host(host) as (subdomain, kwargs):
+            request.urlconf = subdomain['urlconf']
 
-        urlconf = subdomain['urlconf']
-        callback = subdomain['_callback']
+            return subdomain['_callback'](request, **kwargs)
 
-        request.urlconf = urlconf
+    def process_response(self, request, response):
+        if not app_settings.EMULATE:
+            return response
+
         try:
-            set_urlconf(urlconf)
-            return callback(request, **kwargs)
-        finally:
-            set_urlconf(None)
+            val = smart_unicode(response.content)
+        except Exception:
+            return response
+
+        toolbar = Engine(debug=True).from_string(self.TEMPLATE).render(Context({
+            'request': request,
+            'app_settings': app_settings,
+        }))
+
+        idx = val.lower().rfind(self.TAG.lower())
+
+        if idx >= 0:
+            response.content = val[:idx] + toolbar + val[idx + len(self.TAG):]
+
+        return response
