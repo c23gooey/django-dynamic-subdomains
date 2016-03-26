@@ -20,14 +20,16 @@ class DynamicSubdomainsConfig(AppConfig):
             x['_regex'] = re.compile(r'%s(\.|$)' % x['regex'])
             x['_callback'] = from_dotted_path(x['callback'])
 
-        if app_settings.EMULATE:
-            monkeypatch.patch(HttpRequest__get_host, HttpRequest, 'get_host')
-            monkeypatch.patch(RequestFactory__generic, RequestFactory, 'generic')
+        if not app_settings.EMULATE:
+            return
 
-            # Inject our URLs
-            for x in app_settings.SUBDOMAINS:
-                urlconf_module = from_dotted_path(x['urlconf'])
-                urlconf_module.urlpatterns = list(urlconf_module.urlpatterns) + [
-                    url(r'^_/subdomains/', include('dynamic_subdomains.urls',
-                        namespace='dynamic-subdomains')),
-                ]
+        monkeypatch.patch(HttpRequest__get_host, HttpRequest, 'get_host')
+        monkeypatch.patch(RequestFactory__generic, RequestFactory, 'generic')
+
+        # Inject our URLs
+        for x in app_settings.SUBDOMAINS:
+            urlconf_module = from_dotted_path(x['urlconf'])
+            urlconf_module.urlpatterns = list(urlconf_module.urlpatterns) + [
+                url(r'^_/subdomains/', include('dynamic_subdomains.urls',
+                    namespace='dynamic-subdomains')),
+            ]
