@@ -48,18 +48,18 @@ def reverse_crossdomain_part(subdomain_name, path, subdomain_args=(), subdomain_
         kwargs=subdomain_kwargs,
     )
 
-    if app_settings.EMULATE:
-        url = '%s%s' % (
-            app_settings.EMULATE_BASE_URL,
-            reverse('dynamic-subdomains:redirect', args=(domain_part,)),
-        )
+    if not app_settings.EMULATE:
+        return u'//%s%s' % (domain_part, path)
 
-        if path != '/':
-            url += '?%s' % urllib.quote(path)
+    url = '%s%s' % (
+        app_settings.EMULATE_BASE_URL,
+        reverse('dynamic-subdomains:redirect', args=(domain_part,)),
+    )
 
-        return url
+    if path != '/':
+        url += '?%s' % urllib.quote(path)
 
-    return u'//%s%s' % (domain_part, path)
+    return url
 
 def reverse_path(subdomain_name, view, args=(), kwargs=None):
     if kwargs is None:
