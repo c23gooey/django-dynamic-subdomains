@@ -1,12 +1,8 @@
 import contextlib
 
-from django.http import QueryDict
-from django.urls import set_urlconf, NoReverseMatch, resolve, \
-    Resolver404
+from django.urls import set_urlconf, NoReverseMatch
 from django.utils.six.moves.urllib.parse import urlsplit
 
-from .http import HttpResponseSwitchRedirect
-from .views import redirect_
 from .app_settings import app_settings
 
 @contextlib.contextmanager
