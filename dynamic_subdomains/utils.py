@@ -1,7 +1,7 @@
 import contextlib
 
 from django.http import QueryDict
-from django.core.urlresolvers import set_urlconf, NoReverseMatch, resolve, \
+from django.urls import set_urlconf, NoReverseMatch, resolve, \
     Resolver404
 from django.utils.six.moves.urllib.parse import urlsplit
 
