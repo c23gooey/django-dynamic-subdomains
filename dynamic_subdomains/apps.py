@@ -1,12 +1,8 @@
 import re
 
 from django.apps import AppConfig
-from django.http import HttpRequest
-from django.conf.urls import url, include
-from django.test.client import RequestFactory
 from django.utils.module_loading import import_string
 
-from .utils import HttpRequest__get_host, RequestFactory__generic
 from .app_settings import app_settings
 
 class DynamicSubdomainsConfig(AppConfig):

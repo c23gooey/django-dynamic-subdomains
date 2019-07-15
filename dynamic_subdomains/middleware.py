@@ -1,10 +1,7 @@
 from django.conf import settings
-from django.template import Engine, Context
-from django.utils.encoding import smart_text
 from django.core.exceptions import MiddlewareNotUsed
 
 from .utils import set_urlconf_from_host
-from .app_settings import app_settings
 
 
 class SubdomainMiddleware(object):
@@ -152,38 +149,6 @@ class SubdomainMiddleware(object):
         custom urlconfs.
     """
 
-    TAG = '</body>'
-    TEMPLATE = """
-        <script type="text/javascript">
-            function dynamicSubdomains() {
-                var val = prompt("Update host", '{{ request.get_host|escapejs }}');
-                document.cookie = '{{ app_settings.COOKIE_NAME }}=' + val + '; expires=Tue, 19 Jan 2038 03:14:07 UTC;';
-                window.location.reload();
-            }
-        </script>
-        <style type="text/css">
-            #dynamic-subdomains-toolbar {
-                right: 0;
-                bottom: 0;
-                height: 36px;
-                z-index: 99999;
-                position: fixed;
-
-                padding: 10px 16px 0 16px;
-                background-color: #092e20;
-                border-top-left-radius: 7px;
-
-                color: white;
-                cursor: pointer;
-                font-size: 12px;
-                font-weight: bold;
-            }
-        </style>
-        <div id="dynamic-subdomains-toolbar" onclick="dynamicSubdomains();">
-            {{ request.build_absolute_uri }}
-        </div>
-    """
-
     def __init__(self, get_response):
         self.get_response = get_response
         if not settings.SUBDOMAINS:
@@ -198,23 +163,5 @@ class SubdomainMiddleware(object):
             callback_response = subdomain['_callback'](request, **kwargs)
 
         response = callback_response or self.get_response(request)
-
-        if not app_settings.EMULATE:
-            return response
-
-        try:
-            val = smart_text(response.content)
-        except Exception:
-            return response
-
-        toolbar = Engine(debug=True).from_string(self.TEMPLATE).render(Context({
-            'request': request,
-            'app_settings': app_settings,
-        }))
-
-        idx = val.lower().rfind(self.TAG.lower())
-
-        if idx >= 0:
-            response.content = val[:idx] + toolbar + val[idx + len(self.TAG):]
 
         return response

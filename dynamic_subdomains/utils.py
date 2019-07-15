@@ -34,30 +34,5 @@ def get_subdomain(name):
     except KeyError:
         raise NoReverseMatch("No subdomain called %s exists" % name)
 
-def HttpRequest__get_host(self, *args, **kwargs):
-    try:
-        return self.COOKIES[app_settings.COOKIE_NAME]
-    except KeyError:
-        return HttpRequest__get_host._get_host(self, *args, **kwargs)
-
-def RequestFactory__generic(self, *args, **kwargs):
-    response = RequestFactory__generic._generic(self, *args, **kwargs)
-
-    try:
-        url = urlsplit(response['Location'])
-    except KeyError:
-        return response
-
-    try:
-        match = resolve(url.path)
-    except Resolver404:
-        return response
-
-    if isinstance(response, HttpResponseSwitchRedirect) or \
-            match.func is redirect_:
-        return self.get(url.path, QueryDict(url.query), follow=False)
-
-    return response
-
 def noop(*args, **kwargs):
     return
