@@ -19,7 +19,7 @@ setup(
         'monkeypatch',
     ),
     dependency_links=[
-        "git+ssh://git@github.com:TimurNurlygayanov/monkeypatch.git"
+        "git+ssh://git@github.com/TimurNurlygayanov/monkeypatch.git"
     ],
 
     
