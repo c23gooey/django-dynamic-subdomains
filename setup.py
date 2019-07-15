@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 setup(
     name='django-dynamic-subdomains',
     description="Dynamic and static subdomain support for Django.",
-    version='1.2.1',
+    version='1.2.3',
     url='https://chris-lamb.co.uk/projects/django-dynamic-subdomains/',
 
     author="Chris Lamb",
@@ -15,12 +15,6 @@ setup(
     packages=find_packages(),
 
     install_requires=(
-        'Django>=1.11',
-        'monkeypatch==0.1rc3',
+        'Django>=2.2',
     ),
-    dependency_links=[
-        "git+ssh://git@github.com/TimurNurlygayanov/monkeypatch.git#egg=monkeypatch-0.1rc3"
-    ],
-
-    
 )
