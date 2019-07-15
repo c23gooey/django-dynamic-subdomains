@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.template import Engine, Context
-from django.utils.encoding import smart_unicode
+from django.utils.encoding import smart_text
 from django.core.exceptions import MiddlewareNotUsed
 
 from .utils import set_urlconf_from_host
@@ -203,7 +203,7 @@ class SubdomainMiddleware(object):
             return response
 
         try:
-            val = smart_unicode(response.content)
+            val = smart_text(response.content)
         except Exception:
             return response
 
