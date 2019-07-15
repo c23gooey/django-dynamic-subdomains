@@ -16,6 +16,11 @@ setup(
 
     install_requires=(
         'Django>=1.11',
-        'monkeypatch==0.1rc3',
+        'monkeypatch',
     ),
+    dependency_links=[
+        "git+ssh://git@github.com:TimurNurlygayanov/monkeypatch.git"
+    ],
+
+    
 )
