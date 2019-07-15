@@ -5,11 +5,11 @@ from setuptools import setup, find_packages
 setup(
     name='django-dynamic-subdomains',
     description="Dynamic and static subdomain support for Django.",
-    version='1.2.3',
+    version='1.3.0',
     url='https://chris-lamb.co.uk/projects/django-dynamic-subdomains/',
 
-    author="Chris Lamb",
-    author_email='chris@chris-lamb.co.uk',
+    author="Chris Adkins",
+    author_email='c23gooey@gmail.com',
     license='BSD',
 
     packages=find_packages(),
